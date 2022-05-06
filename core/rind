@@ -1,0 +1,342 @@
+#!/bin/bash
+set -eo pipefail
+
+# Log levels
+LOG_ERROR=3
+LOG_WARN=2
+LOG_INFO=1
+LOG_DEBUG=0
+
+## PARAMETERS
+log_level=${LOG_INFO}
+runtime="busybox"
+setup="/bin/true"
+main=""
+artifacts=""
+suffix="${RANDOM}"
+pwd="${PWD}"
+env_vars=""
+## PARAMETERS
+
+# Parse log level from text representation to level number
+parse_log_level() {
+  local level="$1"
+
+  case "${level}" in
+  info | INFO)
+    echo $LOG_INFO
+    ;;
+  debug | DEBUG)
+    echo $LOG_DEBUG
+    ;;
+  warn | WARN)
+    echo $LOG_WARN
+    ;;
+  error | ERROR)
+    echo $LOG_ERROR
+    ;;
+  *)
+    echo -1
+    ;;
+  esac
+}
+
+# Check if the script is executed inside a docker container
+runs_in_docker() {
+  if [[ -f /proc/sdaf/cgroup ]] && grep -q docker /proc/1/cgroup; then
+    true
+  elif [ -f /.dockerenv ]; then
+    true
+  else
+    false
+  fi
+}
+
+_create_docker_env_lines() {
+  IFS=","
+  for env_var in $env_vars
+  do
+    local arg_name
+    arg_name="env_$(echo "$env_var" | awk '{ print tolower($0) }')"
+    echo "# Environment variable ${env_var} will be set on build"
+    echo "ARG ${arg_name}"
+    echo "ENV ${env_var}=\$${arg_name}"
+  done
+}
+
+_create_docker_env_build_args() {
+  IFS=","
+  for env_var in $env_vars
+  do
+    local arg_name
+    arg_name="env_$(echo "$env_var" | awk '{ print tolower($0) }')"
+
+    echo -n " --build-arg ${arg_name}=${!env_var}"
+  done
+}
+
+# Create a dockerfile at a given path
+create_dockerfile() {
+  local target="$1"
+
+  cat <<TEXT >"${target}"
+FROM ${runtime}
+$(_create_docker_env_lines)
+USER root
+WORKDIR /workspace
+COPY ./ ./
+RUN if [ -n "artifacts" ]; then rm -rf ${artifacts} || true; fi;
+RUN ${setup}
+RUN ${main}
+TEXT
+}
+
+# Log output on a given level
+log() {
+  local level="$1"
+  local message="$2"
+  local color=""
+
+  if [[ $level -lt $log_level ]]; then
+    return
+  fi
+
+  case "${level}" in
+  "$LOG_INFO")
+    level="INFO"
+    color='\033[1;36m'
+    ;;
+
+  "$LOG_DEBUG")
+    level="DEBUG"
+    color='\033[1;34m'
+    ;;
+
+  "$LOG_WARN")
+    level="WARN"
+    color='\033[0;33m'
+    ;;
+
+  "$LOG_ERROR")
+    level="ERROR"
+    color='\033[0;31m'
+    ;;
+  esac
+
+  echo -e "[${color}$(printf '%-5s' "${level}")\033[0m] \033[1;35m$(date +'%Y-%m-%dT%H:%M:%S')\033[0m ${message}"
+}
+
+# Usage details displays help
+usage() {
+  local script_name
+  script_name="$(basename "$0")"
+
+  cat <<EOF
+rind: Run commands in docker
+
+Usage of ${script_name}:
+  --artifacts       Path to artifacts to copy to host, these will also be deleted before execution. Seperated by comma (default: none)
+  --env-vars, -e    List of environment variables to make available for scripts. Seperated by comma (default: none)
+  --help, -h        Display this help
+  --log-level       Log level to use, can be INFO, DEBUG, WARN, ERROR (default: INFO)
+  --main-cmd, -m    Main command to execute, can be any valid shell command (default: /bin/true)
+  --pwd             Directory to use as process working directory (default: $PWD)
+  --runtime         Docker image address to use as runtime e.g. busybox (default: busybox)
+  --setup-cmd, -s   Setup command to execute, can be any valid shell command (default: /bin/true)
+  --suffix          Suffix to uniquely identify execution resources and prevent collision (default: random)
+EOF
+  exit 2
+}
+
+_create_env_vars_for_env() {
+   IFS=","
+  for env_var in $env_vars
+  do
+    echo -n "${env_var}=${!env_var}"
+  done
+}
+
+# Execute a given command and log stdout in case the log level specified is included in outputs
+execute_with_log() {
+  local level=$1
+  local command="$2 2>&1"
+
+  if [[ $level -lt $log_level ]]; then
+     eval "$command" > /dev/null
+     return
+  fi
+
+  log "$level" "\$ ${command}"
+  eval "$command" | sed -e "s/^/\x1b[0m[\x1b[35mEXEC \x1b[0m] \x1b[0m\x1b[95m$(date +'%Y-%m-%dT%H:%M:%S') \x1b[3m\x1b[37m /;"
+  echo -en "\033[0m"
+}
+
+#  Logic if the execution is in docker container
+run_in_current_container() {
+  log $LOG_INFO "Is running inside docker container"
+  log $LOG_WARN "Make sure your container includes the same tooling as ${runtime}"
+
+  if [ -n "$artifacts" ]; then
+    log $LOG_INFO "Cleanup artifact paths"
+    # shellcheck disable=SC2086
+    rm -rf ${artifacts} || true
+  fi
+
+  log $LOG_INFO "Running setup script"
+  log $LOG_DEBUG "Executing ${setup}"
+  # shellcheck disable=SC2046
+  env -i $(_create_env_vars_for_env) bash --noprofile --norc -c "${setup}"
+
+  log $LOG_INFO "Running main script"
+  log $LOG_DEBUG "Executing ${main}"
+  # shellcheck disable=SC2046
+  env -i $(_create_env_vars_for_env) bash --noprofile --norc -c "${main}"
+}
+
+# Logic if the execution is locally
+run_with_container() {
+  log $LOG_INFO "Is running locally without a docker container"
+  local dockerfile="/tmp/rind-Dockerfile${suffix}"
+  local image="rind:${suffix}"
+  local container_name="rind-vol-${suffix}"
+
+  log $LOG_INFO "Run scripts in new docker container"
+  log $LOG_INFO "Pull base image ${runtime} for runtime"
+  execute_with_log $LOG_DEBUG "docker pull ${runtime}"
+
+  log $LOG_DEBUG "Creating Dockerfile ${dockerfile} with runtime ${runtime}"
+  create_dockerfile "${dockerfile}"
+
+  log $LOG_INFO "Build docker image ${image}"
+  log $LOG_DEBUG "Generated Dockerfile"
+  execute_with_log $LOG_DEBUG "cat ${dockerfile}"
+
+  log $LOG_DEBUG "Run docker build for volume container"
+  execute_with_log $LOG_DEBUG "docker build . -t ${image} --progress plain  $(_create_docker_env_build_args) -f ${dockerfile}"
+
+  log $LOG_DEBUG "Create volume container ${container_name}"
+  execute_with_log $LOG_DEBUG "docker create --name ${container_name} ${image} /bin/true"
+
+  log $LOG_INFO "Copy artifacts to host"
+  for artifact_path in ${artifacts}; do
+    log $LOG_DEBUG "Copy ${container_name}:/workspace/${artifact_path} -> ${PWD}/${artifact_path}"
+    set +e
+    docker cp -L "${container_name}:/workspace/${artifact_path}" "." 2>&1
+    local status=$?
+    set -e
+
+    if [[ ! $status -eq 0 ]]; then
+      log "ERROR" "Failed to copy artifact ${artifact_path} to host"
+      exit 1
+    fi
+  done
+
+  log $LOG_DEBUG "Cleanup volume container"
+  docker rm -f "${container_name}" >/dev/null || true
+}
+
+# Print error message for argument and exit
+invalid_argument() {
+  local argument="$1"
+  local message="$2"
+
+  log $LOG_ERROR "${argument} argument is invalid: ${message}"
+  exit 2
+}
+
+# Validate all arguments
+validate_arguments() {
+  if [ -z "${main}" ]; then
+    invalid_argument "main" "can not be empty"
+  fi
+
+  if [ -z "${runtime}" ]; then
+    invalid_argument "runtime" "can not be empty"
+  fi
+
+  if [ -z "${setup}" ]; then
+    invalid_argument "setup" "can not be empty"
+  fi
+
+  if [ -z "${suffix}" ]; then
+    invalid_argument "suffix" "can not be empty"
+  fi
+
+  if [ ${log_level} -eq -1 ]; then
+    invalid_argument "log-level" "must be one of INFO,WARN,ERROR,DEBUG"
+  fi
+}
+
+# Validate docker is installed and running
+validate_docker() {
+  if ! [[ $(command -v docker) ]] && [[ $(docker --version) ]]; then
+    log $LOG_ERROR "Docker must be installed and running to execute the commands"
+    exit 2
+  fi
+}
+
+# Parse arguments
+while [[ $# -gt 0 ]]; do
+  case $1 in
+  -R | --runtime)
+    runtime="$2"
+    shift 2
+    ;;
+
+  -s | --setup-cmd)
+    setup="$2"
+    shift 2
+    ;;
+
+  -m | --main-cmd)
+    main="$2"
+    shift 2
+    ;;
+
+  --artifacts)
+    artifacts="$2"
+    shift 2
+    ;;
+
+  --suffix)
+    suffix="$2"
+    shift 2
+    ;;
+
+  -h | --help)
+    usage
+    ;;
+
+  --log-level)
+    log_level="$(parse_log_level "$2")"
+    shift 2
+    ;;
+
+  --pwd)
+    pwd="$2"
+    shift 2
+    ;;
+
+   -e | --env-vars)
+    env_vars="$2"
+    shift 2
+    ;;
+
+  -*)
+    invalid_argument "$1" "unknown option"
+    exit 1
+    ;;
+  esac
+done
+
+validate_arguments
+
+log $LOG_DEBUG "Switching to pwd ${pwd}"
+cd "${pwd}"
+
+if runs_in_docker; then
+  run_in_current_container
+else
+  validate_docker
+  run_with_container
+fi

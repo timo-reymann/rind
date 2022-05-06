@@ -1,0 +1,30 @@
+#!/bin/bash
+
+set -eo pipefail
+
+_ok() {
+  echo -e "\033[0;32m OK\033[0m"
+}
+
+{
+  TMP_SCRIPT="/tmp/rind-bin-${RANDOM}"
+  SUDO=""
+
+  if [ "${UID:-$(id -u)}" -ne 0 ]; then
+    echo -n "Installer is not running as root, trying to use sudo ..."
+    SUDO="sudo"
+    $SUDO whoami >/dev/null
+    _ok
+  fi
+
+  echo -n "Download main script from GitHub ..."
+  curl "https://raw.githubusercontent.com/timo-reymann/poc-rind/main/core/rind" -sSo "${TMP_SCRIPT}"
+  _ok
+
+  echo -n "Add rind to /usr/local/bin, and making it executable ..."
+  $SUDO cp "${TMP_SCRIPT}" "/usr/local/bin/rind"
+  $SUDO chmod +x "/usr/local/bin/rind"
+  _ok
+  echo ""
+  echo "Run rind -h for more information."
+}

@@ -1,0 +1,56 @@
+version: 2.1
+
+executors:
+  go:
+    docker:
+      - image: cimg/go:1.17
+  node:
+    docker:
+      - image: cimg/node:16.15
+
+commands:
+  attach_sources:
+    steps:
+      - attach_workspace:
+          at: ~/project
+          name: Load checked out source
+
+jobs:
+  checkout:
+    executor: go
+    steps:
+      - checkout
+      - persist_to_workspace:
+          name: Persist source for depending jobs
+          paths:
+            - .
+          root: ~/project
+  test-terraform:
+    executor: go
+    working_directory: ~/project/terraform
+    steps:
+      - attach_sources
+      - run:
+          name: Run tests
+          command: |
+            make test
+  test-core:
+    executor: node
+    working_directory: ~/project/core
+    steps:
+      - attach_sources
+      - run:
+          name: Run tests
+          command: |
+            make test
+
+workflows:
+  continuous:
+    jobs:
+      - checkout
+      - test-terraform:
+          requires:
+            - checkout
+      - test-core:
+          requires:
+            - checkout
