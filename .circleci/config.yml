@@ -2,6 +2,7 @@ version: 2.1
 
 orbs:
   terraform-utils: trustedshops-public/terraform-utils@1.6.0
+  semantic-release: trustedshops-public/semantic-release@2.0.0
 
 executors:
   go:
@@ -61,3 +62,12 @@ workflows:
       - test-core:
           requires:
             - checkout
+      - semantic-release/with-minimal-github-config:
+          name: semantic-release
+          requires:
+            - test-core
+            - test-terraform
+          filters:
+            branches:
+              only:
+                - main
