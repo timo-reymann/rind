@@ -1,5 +1,8 @@
 version: 2.1
 
+orbs:
+  terraform-utils: trustedshops-public/terraform-utils@1.6.0
+
 executors:
   go:
     docker:
@@ -30,9 +33,11 @@ jobs:
     working_directory: ~/project/terraform
     steps:
       - attach_sources
+      - terraform-utils/install-tfenv
       - run:
           name: Run tests
           command: |
+            make install-dependencies
             make test
   test-core:
     executor: node
@@ -42,6 +47,7 @@ jobs:
       - run:
           name: Run tests
           command: |
+            make install-dependencies
             make test
 
 workflows:
