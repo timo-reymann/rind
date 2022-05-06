@@ -1,0 +1,8 @@
+version: 2
+updates:
+  - package-ecosystem: gomod
+    directory: /terraform/tests
+    schedule:
+      interval: weekly
+    reviewers:
+      - timo-reymann
