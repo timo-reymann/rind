@@ -3,6 +3,7 @@ version: 2.1
 orbs:
   terraform-utils: trustedshops-public/terraform-utils@1.6.0
   semantic-release: trustedshops-public/semantic-release@2.0.0
+  go: circleci/go@1.7.1
 
 executors:
   go:
@@ -35,11 +36,13 @@ jobs:
     steps:
       - attach_sources
       - terraform-utils/install-tfenv
+      - go/load-cache
       - run:
           name: Run tests
           command: |
             make install-dependencies
             make test
+      - go/save-cache
   test-core:
     executor: node
     working_directory: ~/project/core
