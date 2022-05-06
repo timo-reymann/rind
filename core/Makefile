@@ -12,7 +12,7 @@ test-host: ## Run bats tests on the host
 
 test-docker: ## Run tests in docker container
 	@echo "▶️ Execute tests in docker"
-	@docker build -q tests/container -t rind-tests
-	@docker run --rm -it -v $(PWD):/workspace rind-tests bash -c 'cd /workspace && make test-host'
+	@docker build -q -t rind-tests -f tests/container/Dockerfile .
+	@docker run --rm  rind-tests
 
 test: test-host test-docker ## Run test suite against host and inside docker container
