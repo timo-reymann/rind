@@ -8,7 +8,6 @@ Core logic of rind.
 ## Requirements
 
 - npm (for installing bats)
-- go 1.17+
 - working docker installation
 
 ## Testing
