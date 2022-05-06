@@ -22,11 +22,11 @@ rind - Run in docker
 
 - Install on your target system and use the `rind command`:
   ```bash
-  bash <(curl -sS https://raw.githubusercontent.com/timo-reymann/poc-rind/main/installer)
+  bash <(curl -sS https://raw.githubusercontent.com/timo-reymann/rind/main/installer)
   ```
 - Download and directly pipe to bash
   ```bash
-  curl -sS https://raw.githubusercontent.com/timo-reymann/poc-rind/main/core/rind | bash -s - --log-level DEBUG
+  curl -sS https://raw.githubusercontent.com/timo-reymann/rind/main/core/rind | bash -s - --log-level DEBUG
   ```
 
 - Use the [terraform module](./terraform)
@@ -89,4 +89,5 @@ The project is split into multiple modules, each contains a guide on how to deve
 
 - [core](./core) - Contains the core logic of rind
 - [terraform](./terraform) - Terraform module
+- [examples](./examples) - Examples showcasing what you can do with rind
 - [installer](./installer) - "curl-able" installer

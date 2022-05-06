@@ -1,0 +1,18 @@
+version: 2.1
+
+orbs:
+  deterministic-zip: timo-reymann/deterministic-zip@0.0.1
+
+executors:
+  python:
+    docker:
+      - image: cimg/python:3.9
+
+jobs:
+  build:
+    executor:
+      - checkout
+      - deterministic-zip/install
+      - make build
+
+# ...
