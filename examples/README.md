@@ -8,3 +8,4 @@ Examples to make it easier to understand how/when to use rind.
 > The usecase must have a README and a sample project structure.
 
 - [circleci-python-build](./circleci-python-build) - Example showcasing CircleCI + python custom build
+- [terraform-lambda](./terraform-lambda) - Example showcasing the usage an terraform module to build a lambda inside a docker container
