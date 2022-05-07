@@ -1,5 +1,6 @@
 rind - Run in docker
 ===
+[![CircleCI](https://circleci.com/gh/timo-reymann/rind.svg?style=shield)](https://app.circleci.com/pipelines/github/timo-reymann/rind)
 [![GitHub Release](https://img.shields.io/github/v/tag/timo-reymann/rind.svg?label=version)](https://github.com/timo-reymann/rind/releases)
 [![pre-commit](https://img.shields.io/badge/%E2%9A%93%20%20pre--commit-enabled-success)](https://pre-commit.com/)
 [![Dependabot](https://badgen.net/badge/Dependabot/enabled/green?icon=dependabot)](https://dependabot.com/)
