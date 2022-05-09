@@ -7,7 +7,7 @@ locals {
 
   log_level  = " --log-level \"${var.log_level}\""
   pwd        = " --pwd \"${coalesce(var.pwd, path.root)}\""
-  script_url = "https://raw.githubusercontent.com/timo-reymann/poc-rind/${var.git_ref}/core/rind"
+  script_url = "https://raw.githubusercontent.com/timo-reymann/rind/${var.git_ref}/core/rind"
 }
 
 resource "null_resource" "this" {
