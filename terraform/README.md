@@ -29,7 +29,7 @@ module "build_code" {
   source    = "github.com/timo-reymann/rind//terraform?ref=1.0.0"
   runtime   = "cimg/python:3.9"
   setup_cmd = "make install-dependencies"
-  pwd       = "code"
+  pwd       = "${path.module}/code"
   main_cmd  = "make build"
   artifacts = [
     "dist/" # assuming the build command will produce a dist folder
