@@ -36,7 +36,7 @@ module "build" {
   source    = "github.com/timo-reymann/rind//terraform?ref=1.0.0"
   runtime   = "cimg/python:3.9"
   setup_cmd = "make setup"
-  pwd       = "code"
+  pwd       = "${path.module}/code"
   main_cmd  = "make build"
   artifacts = [
     "dist/"
