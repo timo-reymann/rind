@@ -70,9 +70,9 @@ workflows:
       - semantic-release/with-minimal-github-config:
           name: semantic-release
           tag-format: \${version}
-          requires:
-            - test-core
-            - test-terraform
+          #requires:
+          #  - test-core
+          #  - test-terraform
           filters:
             branches:
               only:
