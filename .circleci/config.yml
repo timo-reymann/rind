@@ -41,6 +41,7 @@ jobs:
           name: Run tests
           command: |
             tfenv install
+            cd ..
             make install-dependencies
             make test
       - go/save-cache
