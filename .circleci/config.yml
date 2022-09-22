@@ -2,7 +2,7 @@ version: 2.1
 
 orbs:
   terraform-utils: trustedshops-public/terraform-utils@1.7.0
-  semantic-release: trustedshops-public/semantic-release@3.1.1
+  semantic-release: trustedshops-public/semantic-release@3.1.2
   go: circleci/go@1.7.1
 
 executors:
@@ -68,9 +68,9 @@ workflows:
       - semantic-release/with-minimal-github-config:
           name: semantic-release
           tag-format: '${version}'
-          #requires:
-          #  - test-core
-          #  - test-terraform
+          requires:
+            - test-core
+            - test-terraform
           filters:
             branches:
               only:
