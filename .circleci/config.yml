@@ -32,7 +32,7 @@ jobs:
           root: ~/project
   test-terraform:
     executor: go
-    working_directory: ~/project/terraform
+    working_directory: ~/project/terraform/tests
     steps:
       - attach_sources
       - terraform-utils/install-tfenv
