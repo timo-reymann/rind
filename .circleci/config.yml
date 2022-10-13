@@ -11,7 +11,7 @@ executors:
       - image: cimg/go:1.19
   node:
     docker:
-      - image: cimg/node:16.17
+      - image: cimg/node:16.18
 
 commands:
   attach_sources:
