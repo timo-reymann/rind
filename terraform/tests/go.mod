@@ -3,7 +3,7 @@ module github.com/timo-reymann/rind/tests
 go 1.17
 
 require (
-	github.com/gruntwork-io/terratest v0.41.4
+	github.com/gruntwork-io/terratest v0.41.6
 	github.com/stretchr/testify v1.7.1 // indirect
 )
 
