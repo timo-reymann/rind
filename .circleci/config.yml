@@ -1,7 +1,7 @@
 version: 2.1
 
 orbs:
-  terraform-utils: trustedshops-public/terraform-utils@1.7.1
+  terraform-utils: trustedshops-public/terraform-utils@2.0.0
   semantic-release: trustedshops-public/semantic-release@3.1.5
   go: circleci/go@1.7.2
 
