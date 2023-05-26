@@ -35,7 +35,7 @@ jobs:
     working_directory: ~/project/terraform/tests
     steps:
       - attach_sources
-      - terraform-utils/install-tfenv
+      - terraform-utils/install_tfenv
       - go/load-cache
       - run:
           name: Run tests
