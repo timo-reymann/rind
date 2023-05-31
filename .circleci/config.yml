@@ -65,7 +65,7 @@ workflows:
       - test-core:
           requires:
             - checkout
-      - semantic-release/with-minimal-github-config:
+      - semantic-release/with_minimal_github_config:
           name: semantic-release
           requires:
             - test-core
